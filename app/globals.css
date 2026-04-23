@@ -1,5 +1,23 @@
 @import "tailwindcss";
 
+/* تحسينات الموبايل */
+@media (max-width: 768px) {
+  body {
+    overflow-x: hidden;
+  }
+  
+  .container {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+}
+
+/* منع overflow */
+* {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 :root {
   --background: #0a0a0a;
   --foreground: #ededed;
@@ -15,15 +33,48 @@
 body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
-
-  background: radial-gradient(circle at center, #111111, #000000);
-  animation: gradientMove 6s ease infinite;
-  background-size: 400% 400%;
-  animation: gradientMove 4s linear infinite;
+  background: radial-gradient(circle at center, #1a1a2e, #0a0a0a, #000000);
+  background-size: 200% 200%;
+  animation: gradientMove 8s ease infinite;
+  min-height: 100vh;
 }
 
 @keyframes gradientMove {
-  0% {background-position: 0% 50%;}
-  50% {background-position: 100% 50%;}
-  100% {background-position: 0% 50%;}
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* تحسينات إضافية للشاشات الصغيرة */
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+  
+  .flip-clock {
+    transform: scale(0.8);
+  }
+}
+
+/* للشاشات المتوسطة */
+@media (min-width: 641px) and (max-width: 1024px) {
+  body {
+    font-size: 15px;
+  }
+}
+
+/* منع flickering على الموبايل */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* تحسين التمرير */
+html {
+  scroll-behavior: smooth;
 }
