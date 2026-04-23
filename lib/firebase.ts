@@ -1,6 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, addDoc, getDocs, orderBy, query, serverTimestamp, updateDoc, doc, where, getDoc, deleteDoc } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getFirestore, collection, addDoc, getDocs, orderBy, query, serverTimestamp, updateDoc, doc, where, deleteDoc } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyC5G6u78lBt_sRT268kCznIWipCW0q-oio",
@@ -14,9 +13,10 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
-export const storage = getStorage(app);
 
-// ========== دوال الرسائل (القديمة) ==========
+// ❌ شيلنا storage عشان مش محتاجينه
+
+// ========== دوال الرسائل ==========
 export const addMessage = async (message: string, name?: string) => {
   return await addDoc(collection(db, 'messages'), {
     message,
@@ -44,15 +44,14 @@ export const deleteMessage = async (id: string) => {
   await deleteDoc(doc(db, 'messages', id));
 };
 
-// ========== دوال الأسماء وطلبات الانضمام ==========
+// ========== دوال طلبات الانضمام (بدون صور) ==========
 
-// إضافة طلب انضمام جديد
+// إضافة طلب انضمام جديد (من غير صورة)
 export const addJoinRequest = async (data: {
   fullName: string;
   seatNumber: string;
   section: string;
   phone?: string;
-  imageUrl: string;
 }) => {
   return await addDoc(collection(db, 'join_requests'), {
     ...data,
@@ -105,13 +104,6 @@ export const getGraduates = async () => {
   const q = query(collection(db, 'graduates'), orderBy('approvedAt', 'desc'));
   const snapshot = await getDocs(q);
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-};
-
-// رفع صورة
-export const uploadImage = async (file: File, path: string): Promise<string> => {
-  const storageRef = ref(storage, path);
-  await uploadBytes(storageRef, file);
-  return await getDownloadURL(storageRef);
 };
 
 // ========== دوال الأسماء البسيطة (للخلف) ==========

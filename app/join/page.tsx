@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
-import { addJoinRequest, uploadImage } from '@/lib/firebase';
+import { useState } from 'react';
+import { addJoinRequest } from '@/lib/firebase';
 import toast, { Toaster } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 
@@ -16,33 +15,26 @@ export default function JoinPage() {
   const [errors, setErrors] = useState({
     fullName: '',
     seatNumber: '',
-    section: '',
-    image: ''
+    section: ''
   });
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // التحقق من صحة البيانات
   const validateForm = () => {
     const newErrors = {
       fullName: '',
       seatNumber: '',
-      section: '',
-      image: ''
+      section: ''
     };
     let isValid = true;
 
-    // التحقق من الاسم (رباعي على الأقل)
     if (!formData.fullName.trim()) {
       newErrors.fullName = 'الاسم رباعي مطلوب';
       isValid = false;
     } else if (formData.fullName.trim().split(' ').length < 3) {
-      newErrors.fullName = 'الاسم يجب أن يكون ثلاثي أو رباعي على الأقل';
+      newErrors.fullName = 'الاسم يجب أن يكون ثلاثي أو رباعي';
       isValid = false;
     }
 
-    // التحقق من رقم الجلوس
     if (!formData.seatNumber.trim()) {
       newErrors.seatNumber = 'رقم الجلوس مطلوب';
       isValid = false;
@@ -51,48 +43,14 @@ export default function JoinPage() {
       isValid = false;
     }
 
-    // التحقق من اختيار الشعبة
     if (!formData.section) {
       newErrors.section = 'من فضلك اختر الشعبة';
-      isValid = false;
-    }
-
-    // التحقق من الصورة
-    if (!imageFile) {
-      newErrors.image = 'صورة الكارنيه مطلوبة';
-      isValid = false;
-    } else if (imageFile.size > 5 * 1024 * 1024) {
-      newErrors.image = 'حجم الصورة لا يتجاوز 5 ميجابايت';
       isValid = false;
     }
 
     setErrors(newErrors);
     return isValid;
   };
-
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('حجم الصورة كبير، الحد الأقصى 5 ميجابايت');
-        return;
-      }
-      setImageFile(file);
-      const preview = URL.createObjectURL(file);
-      setImagePreview(preview);
-      setErrors(prev => ({ ...prev, image: '' }));
-    }
-  }, []);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'image/jpeg': ['.jpeg', '.jpg'],
-      'image/png': ['.png']
-    },
-    maxFiles: 1,
-    maxSize: 5 * 1024 * 1024
-  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,28 +63,16 @@ export default function JoinPage() {
     setLoading(true);
     
     try {
-      // رفع الصورة
-      const imageUrl = await uploadImage(
-        imageFile!, 
-        `id_cards/${Date.now()}_${formData.seatNumber}.jpg`
-      );
-      
-      // إضافة طلب الانضمام
       await addJoinRequest({
         fullName: formData.fullName.trim(),
         seatNumber: formData.seatNumber.trim(),
         section: formData.section,
-        phone: formData.phone,
-        imageUrl
+        phone: formData.phone
       });
       
       toast.success('🎉 تم إرسال طلبك بنجاح! في انتظار الموافقة');
       
-      // تفريغ الفورم
       setFormData({ fullName: '', seatNumber: '', section: '', phone: '' });
-      setImageFile(null);
-      setImagePreview(null);
-      setErrors({ fullName: '', seatNumber: '', section: '', image: '' });
       
     } catch (error: any) {
       console.error('Error:', error);
@@ -158,7 +104,6 @@ export default function JoinPage() {
           onSubmit={handleSubmit}
           className="bg-black/40 backdrop-blur-xl rounded-2xl p-6 md:p-8 border border-white/10 space-y-5"
         >
-          {/* الاسم */}
           <div>
             <label className="block text-sm text-gray-300 mb-1">الاسم رباعي *</label>
             <input
@@ -176,7 +121,6 @@ export default function JoinPage() {
             {errors.fullName && <p className="text-red-400 text-xs mt-1">{errors.fullName}</p>}
           </div>
 
-          {/* رقم الجلوس */}
           <div>
             <label className="block text-sm text-gray-300 mb-1">رقم الجلوس *</label>
             <input
@@ -194,7 +138,6 @@ export default function JoinPage() {
             {errors.seatNumber && <p className="text-red-400 text-xs mt-1">{errors.seatNumber}</p>}
           </div>
 
-          {/* الشعبة */}
           <div>
             <label className="block text-sm text-gray-300 mb-1">الشعبة / القسم *</label>
             <select
@@ -219,7 +162,6 @@ export default function JoinPage() {
             {errors.section && <p className="text-red-400 text-xs mt-1">{errors.section}</p>}
           </div>
 
-          {/* رقم التليفون (اختياري) */}
           <div>
             <label className="block text-sm text-gray-300 mb-1">رقم التليفون (اختياري)</label>
             <input
@@ -231,32 +173,6 @@ export default function JoinPage() {
             />
           </div>
 
-          {/* رفع الصورة */}
-          <div>
-            <label className="block text-sm text-gray-300 mb-2">صورة الكارنيه أو البطاقة *</label>
-            <div
-              {...getRootProps()}
-              className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition
-                ${isDragActive ? 'border-amber-500 bg-amber-500/10' : errors.image ? 'border-red-500' : 'border-white/20 bg-white/5 hover:bg-white/10'}`}
-            >
-              <input {...getInputProps()} />
-              {imagePreview ? (
-                <div className="space-y-2">
-                  <img src={imagePreview} alt="Preview" className="max-h-40 mx-auto rounded-lg" />
-                  <p className="text-sm text-green-400">✓ تم اختيار الصورة</p>
-                </div>
-              ) : (
-                <>
-                  <div className="text-4xl mb-2">📸</div>
-                  <p className="text-gray-400">اسحب الصورة هنا أو اضغط للاختيار</p>
-                  <p className="text-xs text-gray-500 mt-1">jpg, png (حد أقصى 5MB)</p>
-                </>
-              )}
-            </div>
-            {errors.image && <p className="text-red-400 text-xs mt-1">{errors.image}</p>}
-          </div>
-
-          {/* زر الإرسال */}
           <button
             type="submit"
             disabled={loading}
@@ -266,7 +182,7 @@ export default function JoinPage() {
           </button>
 
           <p className="text-center text-xs text-gray-500 pt-2">
-            طلبك هيراجع من المنظمين، وهتتضاف لقائمة الدفعة بعد الموافقة ✅
+            المنظمين هيتأكدوا من بياناتك قبل الموافقة ✅
           </p>
         </motion.form>
         
