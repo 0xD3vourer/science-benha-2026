@@ -5,7 +5,6 @@ import { getPendingRequests, approveRequest, rejectRequest, getJoinRequests } fr
 import toast, { Toaster } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 
-// كلمة سر بسيطة (غيرها بكلمة أقوى)
 const ADMIN_PASSWORD = "benha2026";
 
 export default function AdminPage() {
@@ -23,12 +22,19 @@ export default function AdminPage() {
 
   const loadRequests = async () => {
     setLoading(true);
-    const data = await getPendingRequests();
-    setRequests(data as any[]);
-    setLoading(false);
+    try {
+      const data = await getPendingRequests();
+      console.log('الطلبات المستلمة:', data);
+      setRequests(data as any[]);
+    } catch (error) {
+      console.error('خطأ في جلب الطلبات:', error);
+      toast.error('حدث خطأ في جلب الطلبات');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password === ADMIN_PASSWORD) {
       setIsAuthenticated(true);
@@ -44,8 +50,9 @@ export default function AdminPage() {
       await approveRequest(request.id, request);
       toast.success(`✅ تمت الموافقة على ${request.fullName}`);
       await loadRequests();
-    } catch (error) {
-      toast.error('حدث خطأ');
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.message || 'حدث خطأ');
     } finally {
       setProcessing(null);
     }
@@ -57,8 +64,9 @@ export default function AdminPage() {
       await rejectRequest(requestId);
       toast.success('تم رفض الطلب');
       await loadRequests();
-    } catch (error) {
-      toast.error('حدث خطأ');
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.message || 'حدث خطأ');
     } finally {
       setProcessing(null);
     }
@@ -122,27 +130,24 @@ export default function AdminPage() {
                 className="bg-black/40 backdrop-blur-sm rounded-xl p-5 border border-white/10"
               >
                 <div className="flex flex-wrap gap-4">
-                  {/* الصورة */}
                   {req.imageUrl && (
                     <img 
                       src={req.imageUrl} 
                       alt="ID Card" 
-                      className="w-32 h-24 object-cover rounded-lg border border-white/20"
+                      className="w-32 h-28 object-cover rounded-lg border border-white/20"
                     />
                   )}
                   
-                  {/* بيانات الطلب */}
                   <div className="flex-1">
                     <h3 className="text-xl font-bold text-white">{req.fullName}</h3>
                     <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
                       <p><span className="text-gray-500">رقم الجلوس:</span> {req.seatNumber}</p>
                       <p><span className="text-gray-500">الشعبة:</span> {req.section || 'غير محدد'}</p>
                       {req.phone && <p><span className="text-gray-500">الهاتف:</span> {req.phone}</p>}
-                      <p><span className="text-gray-500">تاريخ الطلب:</span> {req.timestamp?.toDate?.().toLocaleDateString('ar-EG')}</p>
+                      <p><span className="text-gray-500">تاريخ الطلب:</span> {req.timestamp?.toDate?.().toLocaleString('ar-EG') || 'منذ قليل'}</p>
                     </div>
                   </div>
                   
-                  {/* أزرار التحكم */}
                   <div className="flex gap-3 items-center">
                     <button
                       onClick={() => handleApprove(req)}

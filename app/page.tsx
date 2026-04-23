@@ -20,7 +20,7 @@ export default function Home() {
   // تواريخ المراحل (كاملة)
   const stages = [
     {
-      name: "المرحلة الابتدائية",
+      name: "الابتدائية",
       period: "2010 - 2016",
       start: new Date("2010-09-25").getTime(),
       end: new Date("2016-06-15").getTime(),
@@ -31,7 +31,7 @@ export default function Home() {
       achievements: ["أول يوم في المدرسة", "تعلمت القراءة والكتابة", "ذكريات مش هتتكرر"]
     },
     {
-      name: "المرحلة الإعدادية",
+      name: "الإعدادية",
       period: "2016 - 2019",
       start: new Date("2016-09-25").getTime(),
       end: new Date("2019-06-20").getTime(),
@@ -42,7 +42,7 @@ export default function Home() {
       achievements: ["بداية المراهقة", "أولى خطوات الجد", "أصدقاء العمر"]
     },
     {
-      name: "المرحلة الثانوية",
+      name: "الثانوية",
       period: "2019 - 2022",
       start: new Date("2019-09-29").getTime(),
       end: new Date("2022-06-30").getTime(),
@@ -53,7 +53,7 @@ export default function Home() {
       achievements: ["ثانوية عامة", "تحديد المسار", "أيام لا تنسى"]
     },
     {
-      name: "كلية العلوم - بنها",
+      name: "الكلية",
       period: "2022 - 2026",
       start: new Date("2022-10-01").getTime(),
       end: targetDate,
