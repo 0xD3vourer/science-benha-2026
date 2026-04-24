@@ -1,179 +1,150 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { getPendingRequests, approveRequest, rejectRequest, getJoinRequests } from '@/lib/firebase';
-import toast, { Toaster } from 'react-hot-toast';
+import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 
-const ADMIN_PASSWORD = "benha2026";
-
-export default function AdminPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState('');
-  const [requests, setRequests] = useState<any[]>([]);
+export default function AdminDashboard() {
+  const [stats, setStats] = useState({
+    totalMembers: 0,
+    recentMembers: [] as any[],
+    lastUpdate: null as Date | null
+  });
   const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      loadRequests();
-    }
-  }, [isAuthenticated]);
+    loadStats();
+  }, []);
 
-  const loadRequests = async () => {
-    setLoading(true);
+  const loadStats = async () => {
     try {
-      const data = await getPendingRequests();
-      console.log('الطلبات المستلمة:', data);
-      setRequests(data as any[]);
+      // جلب عدد الأعضاء
+      const membersSnapshot = await getDocs(collection(db, 'graduates'));
+      const totalMembers = membersSnapshot.size;
+
+      // جلب آخر 5 أعضاء
+      const recentQuery = query(
+        collection(db, 'graduates'),
+        orderBy('approvedAt', 'desc'),
+        limit(5)
+      );
+      const recentSnapshot = await getDocs(recentQuery);
+      const recentMembers = recentSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      setStats({
+        totalMembers,
+        recentMembers,
+        lastUpdate: new Date()
+      });
     } catch (error) {
-      console.error('خطأ في جلب الطلبات:', error);
-      toast.error('حدث خطأ في جلب الطلبات');
+      console.error('خطأ في جلب الإحصائيات:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      setIsAuthenticated(true);
-      toast.success('تم الدخول بنجاح');
-    } else {
-      toast.error('كلمة السر غلط');
-    }
-  };
-
-  const handleApprove = async (request: any) => {
-    setProcessing(request.id);
-    try {
-      await approveRequest(request.id, request);
-      toast.success(`✅ تمت الموافقة على ${request.fullName}`);
-      await loadRequests();
-    } catch (error: any) {
-      console.error(error);
-      toast.error(error.message || 'حدث خطأ');
-    } finally {
-      setProcessing(null);
-    }
-  };
-
-  const handleReject = async (requestId: string) => {
-    setProcessing(requestId);
-    try {
-      await rejectRequest(requestId);
-      toast.success('تم رفض الطلب');
-      await loadRequests();
-    } catch (error: any) {
-      console.error(error);
-      toast.error(error.message || 'حدث خطأ');
-    } finally {
-      setProcessing(null);
-    }
-  };
-
-  if (!isAuthenticated) {
+  if (loading) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950 flex items-center justify-center p-4">
-        <div className="bg-black/40 backdrop-blur-xl rounded-2xl p-8 border border-white/10 max-w-md w-full">
-          <h1 className="text-2xl font-bold text-center mb-6">🔐 دخول المشرف</h1>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="كلمة السر"
-              className="w-full bg-white/10 rounded-xl p-3 text-white border border-white/20 outline-none focus:border-amber-500"
-            />
-            <button
-              type="submit"
-              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 py-3 rounded-xl font-semibold"
-            >
-              دخول
-            </button>
-          </form>
-        </div>
-      </main>
+      <div className="text-center text-gray-400 py-12">
+        <div className="animate-pulse">جاري التحميل...</div>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950 py-12 px-4">
-      <Toaster position="top-center" />
-      
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
-            👑 لوحة التحكم - طلبات الانضمام
-          </h1>
-          <button
-            onClick={() => setIsAuthenticated(false)}
-            className="text-gray-400 hover:text-white text-sm px-4 py-2 bg-white/5 rounded-xl"
-          >
-            تسجيل خروج
-          </button>
-        </div>
+    <div className="space-y-6">
+      {/* بطاقات الإحصائيات */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-xl p-6 border border-amber-500/20"
+        >
+          <div className="text-3xl mb-2">🎓</div>
+          <div className="text-2xl font-bold text-white">{stats.totalMembers}</div>
+          <div className="text-sm text-gray-400">إجمالي أعضاء الدفعة</div>
+        </motion.div>
 
-        {loading ? (
-          <div className="text-center text-gray-400 py-12">جاري التحميل...</div>
-        ) : requests.length === 0 ? (
-          <div className="text-center text-gray-400 py-12 bg-white/5 rounded-2xl p-8">
-            🎉 مفيش طلبات جديدة في انتظار المراجعة
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-xl p-6 border border-blue-500/20"
+        >
+          <div className="text-3xl mb-2">⏳</div>
+          <div className="text-2xl font-bold text-white">0</div>
+          <div className="text-sm text-gray-400">طلبات معلقة (من Google Forms)</div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-xl p-6 border border-green-500/20"
+        >
+          <div className="text-3xl mb-2">📅</div>
+          <div className="text-xl font-bold text-white">
+            {stats.lastUpdate?.toLocaleDateString('ar-EG') || '---'}
           </div>
+          <div className="text-sm text-gray-400">آخر تحديث</div>
+        </motion.div>
+      </div>
+
+      {/* آخر الأعضاء المضافين */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+        className="bg-black/30 backdrop-blur-sm rounded-xl p-6 border border-white/10"
+      >
+        <h2 className="text-xl font-bold text-white mb-4">🆕 آخر الأعضاء المضافين</h2>
+        {stats.recentMembers.length === 0 ? (
+          <p className="text-gray-400 text-center py-8">لا يوجد أعضاء حتى الآن</p>
         ) : (
-          <div className="space-y-4">
-            {requests.map((req) => (
-              <motion.div
-                key={req.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-black/40 backdrop-blur-sm rounded-xl p-5 border border-white/10"
-              >
-                <div className="flex flex-wrap gap-4">
-                  {req.imageUrl && (
-                    <img 
-                      src={req.imageUrl} 
-                      alt="ID Card" 
-                      className="w-32 h-28 object-cover rounded-lg border border-white/20"
-                    />
-                  )}
-                  
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-white">{req.fullName}</h3>
-                    <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
-                      <p><span className="text-gray-500">رقم الجلوس:</span> {req.seatNumber}</p>
-                      <p><span className="text-gray-500">الشعبة:</span> {req.section || 'غير محدد'}</p>
-                      {req.phone && <p><span className="text-gray-500">الهاتف:</span> {req.phone}</p>}
-                      <p><span className="text-gray-500">تاريخ الطلب:</span> {req.timestamp?.toDate?.().toLocaleString('ar-EG') || 'منذ قليل'}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-3 items-center">
-                    <button
-                      onClick={() => handleApprove(req)}
-                      disabled={processing === req.id}
-                      className="px-5 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-semibold transition disabled:opacity-50"
-                    >
-                      {processing === req.id ? '...' : '✅ قبول'}
-                    </button>
-                    <button
-                      onClick={() => handleReject(req.id)}
-                      disabled={processing === req.id}
-                      className="px-5 py-2 bg-red-600 hover:bg-red-500 rounded-lg font-semibold transition disabled:opacity-50"
-                    >
-                      {processing === req.id ? '...' : '❌ رفض'}
-                    </button>
-                  </div>
+          <div className="space-y-2">
+            {stats.recentMembers.map((member, idx) => (
+              <div key={member.id} className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                <div>
+                  <p className="text-white font-medium">{member.name}</p>
+                  <p className="text-xs text-gray-500">{member.section || 'غير محدد'}</p>
                 </div>
-              </motion.div>
+                <Link 
+                  href="/admin/members"
+                  className="text-amber-400 text-sm hover:underline"
+                >
+                  عرض
+                </Link>
+              </div>
             ))}
           </div>
         )}
-        
-        <div className="text-center mt-6">
-          <a href="/" className="text-gray-400 hover:text-amber-400 text-sm transition">← رجوع للصفحة الرئيسية</a>
-        </div>
+      </motion.div>
+
+      {/* روابط سريعة */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Link 
+          href="/admin/pending"
+          className="group bg-gradient-to-r from-amber-600/20 to-orange-600/20 rounded-xl p-6 border border-amber-500/20 text-center hover:border-amber-500/40 transition"
+        >
+          <div className="text-4xl mb-2">⏳</div>
+          <h3 className="text-lg font-bold text-white group-hover:text-amber-400 transition">الطلبات المعلقة</h3>
+          <p className="text-sm text-gray-400 mt-1">مراجعة وإدارة الطلبات الجديدة من Google Forms</p>
+        </Link>
+
+        <Link 
+          href="/admin/members"
+          className="group bg-gradient-to-r from-emerald-600/20 to-teal-600/20 rounded-xl p-6 border border-emerald-500/20 text-center hover:border-emerald-500/40 transition"
+        >
+          <div className="text-4xl mb-2">🎓</div>
+          <h3 className="text-lg font-bold text-white group-hover:text-emerald-400 transition">أعضاء الدفعة</h3>
+          <p className="text-sm text-gray-400 mt-1">عرض وإدارة جميع أعضاء الدفعة المعتمدين</p>
+        </Link>
       </div>
-    </main>
+    </div>
   );
 }
