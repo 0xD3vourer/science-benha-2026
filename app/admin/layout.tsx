@@ -119,6 +119,16 @@ export default function AdminLayout({
                 >
                   📧 إشعارات
                 </Link>
+                <Link
+                  href="/admin/memories"
+                  className={`px-4 py-2 rounded-lg text-sm transition ${
+                  pathname === '/admin/memories'
+                  ? 'bg-amber-500/20 text-amber-400'
+                  : 'text-gray-400 hover:text-white hover:bg-white/10'
+                }`}
+              >
+            💭 الذكريات
+            </Link>                
               </nav>
             </div>
             <button
