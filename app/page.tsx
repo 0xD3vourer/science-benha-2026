@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useEffect, useState } from "react";
 import { Toaster } from 'react-hot-toast';
@@ -10,6 +10,7 @@ import FullJourneyProgress from '@/components/FullJourneyProgress';
 import Timeline from '@/components/Timeline';
 import StagesList from '@/components/StagesList';
 import BottomNav from '@/components/BottomNav';
+import Link from 'next/link';
 
 export default function Home() {
   const targetDate = new Date("2026-06-14T15:30:00").getTime();
@@ -17,7 +18,6 @@ export default function Home() {
   const [timeSince, setTimeSince] = useState(0);
   const [showFullTimeline, setShowFullTimeline] = useState(false);
 
-  // تواريخ المراحل (كاملة)
   const stages = [
     {
       name: "الابتدائية",
@@ -101,9 +101,19 @@ export default function Home() {
       <div className="container mx-auto px-4 py-8 relative">
         <Toaster position="top-center" />
         <BackgroundEffects />
-        
+
         <div className="relative z-10 max-w-4xl mx-auto space-y-6">
           <Header />
+
+          {/* 🔥 زرار الجاليري في مكان مناسب */}
+          <div className="flex justify-center">
+            <Link href="/gallery">
+              <button className="bg-amber-500 hover:bg-amber-600 text-black px-5 py-2 rounded-xl transition shadow-lg">
+                🖼️ معرض الخريجين
+              </button>
+            </Link>
+          </div>
+
           <CountdownTimer targetDate={targetDate} isFinished={isFinished} timeSince={timeSince} />
           <UniversityProgress universityPercentage={universityPercentage} />
           <FullJourneyProgress targetDate={targetDate} stages={stages} />

@@ -78,7 +78,7 @@ export default function AdminLayout({
               <h1 className="text-xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
                 👑 لوحة التحكم
               </h1>
-              <nav className="flex gap-2">
+              <nav className="flex gap-2 flex-wrap">
                 <Link 
                   href="/admin"
                   className={`px-4 py-2 rounded-lg text-sm transition ${
@@ -108,6 +108,16 @@ export default function AdminLayout({
                   }`}
                 >
                   🎓 أعضاء الدفعة
+                </Link>
+                <Link 
+                  href="/admin/notify"
+                  className={`px-4 py-2 rounded-lg text-sm transition ${
+                    pathname === '/admin/notify' 
+                      ? 'bg-amber-500/20 text-amber-400' 
+                      : 'text-gray-400 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  📧 إشعارات
                 </Link>
               </nav>
             </div>

@@ -1,4 +1,4 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore, collection, addDoc, getDocs, orderBy, query, serverTimestamp, updateDoc, doc, where, deleteDoc } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -11,10 +11,10 @@ const firebaseConfig = {
   measurementId: "G-HQQVLEXR04"
 };
 
-const app = initializeApp(firebaseConfig);
+// منع التهيئة المكررة
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 export const db = getFirestore(app);
 export { app };
-// ❌ شيلنا storage عشان مش محتاجينه
 
 // ========== دوال الرسائل ==========
 export const addMessage = async (message: string, name?: string) => {
@@ -44,14 +44,15 @@ export const deleteMessage = async (id: string) => {
   await deleteDoc(doc(db, 'messages', id));
 };
 
-// ========== دوال طلبات الانضمام (بدون صور) ==========
+// ========== دوال طلبات الانضمام ==========
 
-// إضافة طلب انضمام جديد (من غير صورة)
+// إضافة طلب انضمام جديد (مع إيميل اختياري)
 export const addJoinRequest = async (data: {
   fullName: string;
   seatNumber: string;
   section: string;
   phone?: string;
+  email?: string;
 }) => {
   return await addDoc(collection(db, 'join_requests'), {
     ...data,
@@ -74,7 +75,7 @@ export const getPendingRequests = async () => {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
-// الموافقة على طلب (نقل الاسم لـ graduates)
+// الموافقة على طلب (نقل الاسم لـ graduates) مع إضافة الإيميل
 export const approveRequest = async (requestId: string, requestData: any) => {
   // تحديث حالة الطلب
   await updateDoc(doc(db, 'join_requests', requestId), {
@@ -82,11 +83,12 @@ export const approveRequest = async (requestId: string, requestData: any) => {
     approvedAt: serverTimestamp()
   });
   
-  // إضافة الاسم لقائمة الخريجين
+  // إضافة الاسم لقائمة الخريجين مع الإيميل
   await addDoc(collection(db, 'graduates'), {
     name: requestData.fullName,
     section: requestData.section,
     seatNumber: requestData.seatNumber,
+    email: requestData.email || '',
     approvedAt: serverTimestamp()
   });
 };
@@ -99,7 +101,7 @@ export const rejectRequest = async (requestId: string) => {
   });
 };
 
-// جلب قائمة الخريجين المعتمدة
+// جلب قائمة الخريجين المعتمدة (مع الإيميل)
 export const getGraduates = async () => {
   const q = query(collection(db, 'graduates'), orderBy('approvedAt', 'desc'));
   const snapshot = await getDocs(q);
@@ -107,10 +109,11 @@ export const getGraduates = async () => {
 };
 
 // ========== دوال الأسماء البسيطة (للخلف) ==========
-export const addName = async (name: string, section?: string) => {
+export const addName = async (name: string, section?: string, email?: string) => {
   return await addDoc(collection(db, 'graduates'), {
     name,
     section: section || 'غير محدد',
+    email: email || '',
     timestamp: serverTimestamp()
   });
 };
