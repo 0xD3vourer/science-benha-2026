@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase';
 import toast, { Toaster } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 
-// هات الرابط من Apps Script وضعه هنا 👇
+// 👇 الرابط من Apps Script (عدله بالرابط بتاعك)
 const SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbxIBSm-6HT_NG-rk58OR9LlGn7JxL54DahapL_3Xj640VpwZK_wACC8vuPxpujJdeWtAg/exec';
 
 export default function MembersPage() {
@@ -38,6 +38,22 @@ export default function MembersPage() {
     return () => unsubscribe();
   }, []);
 
+  // دالة للمزامنة مع Google Sheets
+  const syncWithGoogleSheets = async (action: string, name: string, section: string) => {
+    try {
+      await fetch(SHEETS_API_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action, name, section }),
+      });
+    } catch (error) {
+      console.error("Sync error:", error);
+    }
+  };
+
   const handleAdd = async () => {
     if (!newMember.name.trim()) {
       toast.error('الاسم مطلوب');
@@ -47,6 +63,16 @@ export default function MembersPage() {
     const nameParts = newMember.name.trim().split(' ');
     if (nameParts.length < 3) {
       toast.error('الاسم لازم يكون ثلاثي أو رباعي');
+      return;
+    }
+    
+    // 🔥 التحقق من التكرار في القائمة الحالية قبل الإضافة
+    const existingMember = members.find(
+      member => member.name === newMember.name.trim() && member.section === newMember.section
+    );
+    
+    if (existingMember) {
+      toast.error(`⚠️ الاسم "${newMember.name}" موجود بالفعل في قسم "${newMember.section || 'غير محدد'}"`);
       return;
     }
     
@@ -60,21 +86,10 @@ export default function MembersPage() {
         approvedAt: new Date()
       });
       
-      // 2. مزامنة مع Google Sheets (روح لـ Apps Script وهو هيضيف الـ Checkbox)
-      await fetch(SHEETS_API_URL, {
-        method: 'POST',
-        mode: 'no-cors', // ده مهم عشان تتجنب مشكلة CORS
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'add',
-          name: newMember.name.trim(),
-          section: newMember.section || 'غير محدد'
-        })
-      });
+      // 2. مزامنة مع Google Sheets
+      await syncWithGoogleSheets('add', newMember.name.trim(), newMember.section || 'غير محدد');
       
-      toast.success(`✅ تمت إضافة البطل ${newMember.name}`);
+      toast.success(`✅ تمت إضافة ${newMember.name}`);
       setNewMember({ name: '', section: '' });
       setShowAddForm(false);
       
@@ -86,26 +101,16 @@ export default function MembersPage() {
     }
   };
 
-  const handleDelete = async (memberId: string, name: string) => {
-    if (!confirm(`متأكد إنك عايز تحذف ${name}؟`)) return;
+  const handleDelete = async (memberId: string, name: string, section: string) => {
+    if (!confirm(`متأكد إنك عايز تحذف ${name} (${section})؟`)) return;
     
     setProcessing(memberId);
     try {
       // 1. حذف من Firebase
       await deleteDoc(doc(db, 'graduates', memberId));
       
-      // 2. مزامنة مع Google Sheets (يروح يشيل الـ Checkbox)
-      await fetch(SHEETS_API_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'delete',
-          name: name
-        })
-      });
+      // 2. مزامنة مع Google Sheets
+      await syncWithGoogleSheets('delete', name, section);
       
       toast.success(`🗑️ تم حذف ${name}`);
     } catch (error: any) {
@@ -134,6 +139,8 @@ export default function MembersPage() {
 
   return (
     <div className="space-y-6">
+      <Toaster position="top-center" />
+      
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-bold text-white mb-1">🎓 أعضاء الدفعة</h2>
@@ -168,13 +175,15 @@ export default function MembersPage() {
               className="w-full bg-white/10 rounded-xl p-3 text-white border border-white/20 focus:border-amber-500 outline-none transition"
             >
               <option value="">اختر القسم</option>
-              <option value="حاسب آلي">حاسب آلي</option>
-              <option value="فيزياء">فيزياء</option>
-              <option value="كيمياء">كيمياء</option>
-              <option value="جيولوجيا">جيولوجيا</option>
-              <option value="رياضيات">رياضيات</option>
-              <option value="نبات">نبات</option>
-              <option value="حيوان">حيوان</option>
+              <option value="الحاسب">الحاسب</option>
+              <option value="الفيزياء">الفيزياء</option>
+              <option value="الكيمياء">الكيمياء</option>
+              <option value="الجيولوجيا">الجيولوجيا</option>
+              <option value="الرياضيات">الرياضيات</option>
+              <option value="النبات">النبات</option>
+              <option value="علم الحشرات">علم الحشرات</option>
+              <option value="كيمياء حيوية / ميكروبيولوجي">كيمياء حيوية / ميكروبيولوجي</option>                            
+              <option value="علوم الحيوان">علوم الحيوان</option>
             </select>
             <button
               onClick={handleAdd}
@@ -208,14 +217,16 @@ export default function MembersPage() {
           onChange={(e) => setFilterSection(e.target.value)}
           className="bg-white/10 rounded-xl p-3 text-white border border-white/20 focus:border-amber-500 outline-none transition"
         >
-          <option value="">كل الأقسام</option>
-          <option value="حاسب آلي">حاسب آلي</option>
-          <option value="فيزياء">فيزياء</option>
-          <option value="كيمياء">كيمياء</option>
-          <option value="جيولوجيا">جيولوجيا</option>
-          <option value="رياضيات">رياضيات</option>
-          <option value="نبات">نبات</option>
-          <option value="حيوان">حيوان</option>
+            <option value="">كل الأقسام</option>
+            <option value="الحاسب">الحاسب</option>
+            <option value="الفيزياء">الفيزياء</option>
+            <option value="الكيمياء">الكيمياء</option>
+            <option value="الجيولوجيا">الجيولوجيا</option>
+            <option value="الرياضيات">الرياضيات</option>
+            <option value="النبات">النبات</option>
+            <option value="علم الحشرات">علم الحشرات</option>
+            <option value="كيمياء حيوية / ميكروبيولوجي">كيمياء حيوية / ميكروبيولوجي</option>                            
+            <option value="علوم الحيوان">علوم الحيوان</option>
         </select>
       </div>
 
@@ -243,7 +254,7 @@ export default function MembersPage() {
                 </div>
                 
                 <button
-                  onClick={() => handleDelete(member.id, member.name)}
+                  onClick={() => handleDelete(member.id, member.name, member.section)}
                   disabled={processing === member.id}
                   className="px-4 py-1.5 bg-red-600/70 hover:bg-red-600 rounded-lg text-sm font-semibold transition disabled:opacity-50"
                 >
