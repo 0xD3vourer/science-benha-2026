@@ -39,7 +39,7 @@ export default function LoginPage() {
       if (!gSnap.empty) {
         // ✅ moved approved → ابعت magic link
         await sendSignInLinkToEmail(auth, cleanEmail, {
-          url: `${window.location.origin}/finishSignIn`,
+          url: `${process.env.NEXT_PUBLIC_BASE_URL}/finishSignIn`,
           handleCodeInApp: true,
         });
         localStorage.setItem('emailForSignIn', cleanEmail);

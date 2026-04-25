@@ -11,51 +11,52 @@ export default function FinishSignInPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const finish = async () => {
-      if (!isSignInWithEmailLink(auth, window.location.href)) {
-        router.push('/login');
-        return;
+  if (typeof window === "undefined") return;
+
+  const finish = async () => {
+    if (!isSignInWithEmailLink(auth, window.location.href)) {
+      router.push('/login');
+      return;
+    }
+
+    let email = localStorage.getItem('emailForSignIn');
+    if (!email) {
+      email = window.prompt('اكتب إيميلك للتأكيد') || '';
+    }
+
+    try {
+      const result = await signInWithEmailLink(auth, email, window.location.href);
+      localStorage.removeItem('emailForSignIn');
+      const u = result.user;
+
+      const q = query(
+        collection(db, 'graduates'),
+        where('email', '==', email.toLowerCase())
+      );
+      const snap = await getDocs(q);
+
+      if (!snap.empty) {
+        const graduateData = snap.docs[0].data();
+
+        await setDoc(doc(db, 'users', u.uid), {
+          name: graduateData.name,
+          email: u.email,
+          section: graduateData.section || '',
+          uid: u.uid,
+        }, { merge: true });
       }
 
-      let email = localStorage.getItem('emailForSignIn');
-      if (!email) {
-        email = window.prompt('اكتب إيميلك للتأكيد') || '';
-      }
+      setStatus('تم الدخول ✅ جاري التحويل...');
+      router.push('/gallery');
+    } catch (err) {
+      console.error(err);
+      setStatus('في مشكلة في الدخول...');
+      setTimeout(() => router.push('/login'), 2000);
+    }
+  };
 
-      try {
-        const result = await signInWithEmailLink(auth, email, window.location.href);
-        localStorage.removeItem('emailForSignIn');
-        const u = result.user;
-
-        // جيب بياناته من graduates
-        const q = query(
-          collection(db, 'graduates'),
-          where('email', '==', email.toLowerCase())
-        );
-        const snap = await getDocs(q);
-
-        if (!snap.empty) {
-          const graduateData = snap.docs[0].data();
-          // احفظ في users collection عشان نستخدمه بعدين
-          await setDoc(doc(db, 'users', u.uid), {
-            name: graduateData.name,
-            email: u.email,
-            section: graduateData.section || '',
-            uid: u.uid,
-          }, { merge: true });
-        }
-
-        setStatus('تم الدخول ✅ جاري التحويل...');
-        router.push('/gallery');
-      } catch (err: any) {
-        console.error(err);
-        setStatus('في مشكلة في الدخول، هنرجعك لصفحة الدخول...');
-        setTimeout(() => router.push('/login'), 2000);
-      }
-    };
-
-    finish();
-  }, []);
+  finish();
+}, []);
 
   return (
     <main className="min-h-screen bg-gray-950 flex items-center justify-center">
