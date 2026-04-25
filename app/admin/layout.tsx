@@ -5,7 +5,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import toast, { Toaster } from 'react-hot-toast';
 
-const ADMIN_PASSWORD = "benha2026";
+// 🔐 الباسورد بييجي من Vercel Env Var (NEXT_PUBLIC_ADMIN_PASSWORD)
+//    لو مش موجود، fallback على القيمة القديمة علشان الموقع ما يقعش.
+//    ⚠️ ملحوظة: Next.js public env vars بتظهر في الـ client bundle برضو،
+//    فده bypass خفيف مش حماية حقيقية. لو محتاج حماية أقوى استخدم
+//    Firebase Auth + custom claim "admin: true" بدل الباسورد ده.
+const ADMIN_PASSWORD =
+  process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'benha2026';
 
 export default function AdminLayout({
   children,
@@ -16,12 +22,9 @@ export default function AdminLayout({
   const [password, setPassword] = useState('');
   const pathname = usePathname();
 
-  // التحقق من المصادقة
   useEffect(() => {
     const auth = sessionStorage.getItem('adminAuth');
-    if (auth === 'true') {
-      setIsAuthenticated(true);
-    }
+    if (auth === 'true') setIsAuthenticated(true);
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -69,8 +72,7 @@ export default function AdminLayout({
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950">
       <Toaster position="top-center" />
-      
-      {/* شريط التنقل العلوي */}
+
       <div className="border-b border-white/10 bg-black/30 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 py-3">
           <div className="flex justify-between items-center flex-wrap gap-3">
@@ -79,56 +81,25 @@ export default function AdminLayout({
                 👑 لوحة التحكم
               </h1>
               <nav className="flex gap-2 flex-wrap">
-                <Link 
-                  href="/admin"
-                  className={`px-4 py-2 rounded-lg text-sm transition ${
-                    pathname === '/admin' 
-                      ? 'bg-amber-500/20 text-amber-400' 
-                      : 'text-gray-400 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  📊 Dashboard
-                </Link>
-                <Link 
-                  href="/admin/pending"
-                  className={`px-4 py-2 rounded-lg text-sm transition ${
-                    pathname === '/admin/pending' 
-                      ? 'bg-amber-500/20 text-amber-400' 
-                      : 'text-gray-400 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  ⏳ الطلبات المعلقة
-                </Link>
-                <Link 
-                  href="/admin/members"
-                  className={`px-4 py-2 rounded-lg text-sm transition ${
-                    pathname === '/admin/members' 
-                      ? 'bg-amber-500/20 text-amber-400' 
-                      : 'text-gray-400 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  🎓 أعضاء الدفعة
-                </Link>
-                <Link 
-                  href="/admin/notify"
-                  className={`px-4 py-2 rounded-lg text-sm transition ${
-                    pathname === '/admin/notify' 
-                      ? 'bg-amber-500/20 text-amber-400' 
-                      : 'text-gray-400 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  📧 إشعارات
-                </Link>
-                <Link
-                  href="/admin/memories"
-                  className={`px-4 py-2 rounded-lg text-sm transition ${
-                  pathname === '/admin/memories'
-                  ? 'bg-amber-500/20 text-amber-400'
-                  : 'text-gray-400 hover:text-white hover:bg-white/10'
-                }`}
-              >
-            💭 الذكريات
-            </Link>                
+                {[
+                  { href: '/admin', label: '📊 Dashboard' },
+                  { href: '/admin/pending', label: '⏳ الطلبات المعلقة' },
+                  { href: '/admin/members', label: '🎓 أعضاء الدفعة' },
+                  { href: '/admin/notify', label: '📧 إشعارات' },
+                  { href: '/admin/memories', label: '💭 الذكريات' },
+                ].map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`px-4 py-2 rounded-lg text-sm transition ${
+                      pathname === link.href
+                        ? 'bg-amber-500/20 text-amber-400'
+                        : 'text-gray-400 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
               </nav>
             </div>
             <button
@@ -140,10 +111,8 @@ export default function AdminLayout({
           </div>
         </div>
       </div>
-      
-      <div className="max-w-6xl mx-auto px-4 py-6">
-        {children}
-      </div>
+
+      <div className="max-w-6xl mx-auto px-4 py-6">{children}</div>
     </main>
   );
 }

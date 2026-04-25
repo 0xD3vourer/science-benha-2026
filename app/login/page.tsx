@@ -25,57 +25,66 @@ export default function LoginPage() {
 
   const handleSend = async () => {
     if (!email.trim()) return toast.error('اكتب إيميلك الأول');
+    const cleanEmail = email.trim().toLowerCase();
+
     setSending(true);
     try {
-      // تحقق إن الإيميل ده موجود في graduates (approved)
-      const q = query(
+      // 1️⃣ تحقق إن الإيميل ده موجود في graduates (approved)
+      const gq = query(
         collection(db, 'graduates'),
-        where('email', '==', email.trim().toLowerCase())
+        where('email', '==', cleanEmail)
       );
-      const snap = await getDocs(q);
+      const gSnap = await getDocs(gq);
 
-      if (snap.empty) {
-        // جرب pending_requests
-        const pq = query(
-          collection(db, 'pending_requests'),
-          where('email', '==', email.trim().toLowerCase())
-        );
-        const pSnap = await getDocs(pq);
-        if (!pSnap.empty) {
-          toast.error('طلبك لسه تحت المراجعة ⏳');
-        } else {
-          toast.error('الإيميل ده مش مسجل في الدفعة');
-        }
-        setSending(false);
+      if (!gSnap.empty) {
+        // ✅ moved approved → ابعت magic link
+        await sendSignInLinkToEmail(auth, cleanEmail, {
+          url: `${window.location.origin}/finishSignIn`,
+          handleCodeInApp: true,
+        });
+        localStorage.setItem('emailForSignIn', cleanEmail);
+        setSent(true);
         return;
       }
 
-      // الإيميل موجود — ابعت magic link
-      await sendSignInLinkToEmail(auth, email.trim(), {
-        url: 'https://science-benha-graduation-2026.vercel.app/finishSignIn',
-        handleCodeInApp: true,
-      });
-      localStorage.setItem('emailForSignIn', email.trim());
-      setSent(true);
+      // 2️⃣ مش approved — هل هو في pending؟
+      const pq = query(
+        collection(db, 'pending_requests'),
+        where('email', '==', cleanEmail)
+      );
+      const pSnap = await getDocs(pq);
+
+      if (!pSnap.empty) {
+        // ودّيه على صفحة الانتظار
+        router.push(`/waiting?email=${encodeURIComponent(cleanEmail)}`);
+        return;
+      }
+
+      // 3️⃣ مش موجود خالص
+      toast.error('الإيميل ده مش مسجل في الدفعة. سجّل من /join الأول.');
     } catch (err: any) {
       console.error(err);
-      toast.error('في مشكلة: ' + err.message);
+      toast.error('في مشكلة: ' + (err?.message || 'حاول تاني'));
     } finally {
       setSending(false);
     }
   };
 
-  if (loading) return (
-    <main className="min-h-screen bg-gray-950 flex items-center justify-center">
-      <p className="text-gray-500 text-sm">جاري التحقق...</p>
-    </main>
-  );
+  if (loading)
+    return (
+      <main className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <p className="text-gray-500 text-sm">جاري التحقق...</p>
+      </main>
+    );
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950 flex items-center justify-center p-5">
       <Toaster />
       <div className="max-w-sm w-full">
-        <Link href="/" className="text-gray-500 hover:text-white text-sm mb-8 inline-block transition">
+        <Link
+          href="/"
+          className="text-gray-500 hover:text-white text-sm mb-8 inline-block transition"
+        >
           ← الرئيسية
         </Link>
 
@@ -89,19 +98,25 @@ export default function LoginPage() {
               type="email"
               placeholder="إيميلك"
               value={email}
-              onChange={e => setEmail(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSend()}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               className="w-full bg-white/10 rounded-xl p-3 text-white placeholder-gray-500 text-sm mb-3 focus:outline-none focus:ring-1 focus:ring-amber-500"
             />
-            <button onClick={handleSend} disabled={sending}
-              className="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-black py-3 rounded-xl font-semibold transition text-sm">
+            <button
+              onClick={handleSend}
+              disabled={sending}
+              className="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-black py-3 rounded-xl font-semibold transition text-sm"
+            >
               {sending ? '⏳ جاري التحقق...' : 'ابعتلي اللينك 🔗'}
             </button>
             <p className="text-xs text-gray-600 mt-4 text-center">
               استخدم نفس الإيميل اللي سجلت بيه في الدفعة
             </p>
             <div className="mt-4 pt-4 border-t border-white/5 text-center">
-              <Link href="/join" className="text-xs text-amber-500 hover:text-amber-400 transition">
+              <Link
+                href="/join"
+                className="text-xs text-amber-500 hover:text-amber-400 transition"
+              >
                 لسه مسجلتش؟ انضم للدفعة →
               </Link>
             </div>
@@ -113,8 +128,10 @@ export default function LoginPage() {
             <p className="text-gray-400 text-sm mb-1">بعتنالك لينك على</p>
             <p className="text-amber-400 text-sm font-medium mb-4">{email}</p>
             <p className="text-gray-600 text-xs">افتح اللينك وهتدخل تلقائي</p>
-            <button onClick={() => setSent(false)}
-              className="mt-5 text-xs text-gray-500 hover:text-gray-300 transition underline">
+            <button
+              onClick={() => setSent(false)}
+              className="mt-5 text-xs text-gray-500 hover:text-gray-300 transition underline"
+            >
               غير الإيميل
             </button>
           </div>
