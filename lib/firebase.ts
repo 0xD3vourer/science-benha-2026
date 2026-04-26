@@ -17,26 +17,14 @@ import { getAuth } from "firebase/auth";
 // ✅ القيم دي مأخوذة من Firebase Console مباشرة.
 //    أي fallback هنا متطابق مع الـ console.
 const firebaseConfig = {
-  apiKey:
-    process.env.NEXT_PUBLIC_FIREBASE_API_KEY ||
-    "AIzaSyCS0Gu78lBt_sRT268kCznlWipCW0q-oio",
-  authDomain:
-    process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ||
-    "science-benha-2026.firebaseapp.com",
-  projectId:
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "science-benha-2026",
-  storageBucket:
-    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ||
-    "science-benha-2026.firebasestorage.app",
-  messagingSenderId:
-    process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "725961025715",
-  appId:
-    process.env.NEXT_PUBLIC_FIREBASE_APP_ID ||
-    "1:725961025715:web:bb725210a31406cc8a68c6",
-  measurementId:
-    process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "G-HQQVLEXR04",
-  };
-
+  apiKey: "AIzaSyCS0Gu78lBt_sRT268kCznlWipCW0q-oio",
+  authDomain: "science-benha-2026.firebaseapp.com",
+  projectId: "science-benha-2026",
+  storageBucket: "science-benha-2026.firebasestorage.app",
+  messagingSenderId: "725961025715",
+  appId: "1:725961025715:web:bb725210a31406cc8a68c6",
+  measurementId: "G-HQQVLEXR04"
+};
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 export const db = getFirestore(app);
