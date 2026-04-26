@@ -25,16 +25,32 @@ export default function AdminLayout({
   useEffect(() => {
     const auth = sessionStorage.getItem('adminAuth');
     if (auth === 'true') setIsAuthenticated(true);
+    // 🪲 Debug helper: في الـ console هتشوف إيه الباسورد المتوقع.
+    //    شيل السطر ده بعد ما تتأكد إن كل حاجة شغالة.
+    if (typeof window !== 'undefined') {
+      console.log(
+        '[Admin] expected password length:',
+        ADMIN_PASSWORD.length,
+        '| using env var?',
+        !!process.env.NEXT_PUBLIC_ADMIN_PASSWORD
+      );
+    }
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
+    if (password.trim() === ADMIN_PASSWORD.trim()) {
       setIsAuthenticated(true);
       sessionStorage.setItem('adminAuth', 'true');
       toast.success('تم الدخول بنجاح');
     } else {
       toast.error('كلمة السر غلط');
+      console.log(
+        '[Admin] wrong password. Entered length:',
+        password.length,
+        '| expected length:',
+        ADMIN_PASSWORD.length
+      );
     }
   };
 
@@ -47,6 +63,7 @@ export default function AdminLayout({
   if (!isAuthenticated) {
     return (
       <main className="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950 flex items-center justify-center p-4">
+        <Toaster position="top-center" />
         <div className="bg-black/40 backdrop-blur-xl rounded-2xl p-8 border border-white/10 max-w-md w-full">
           <h1 className="text-2xl font-bold text-center mb-6">🔐 دخول المشرف</h1>
           <form onSubmit={handleLogin} className="space-y-4">
@@ -55,6 +72,7 @@ export default function AdminLayout({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="كلمة السر"
+              autoComplete="current-password"
               className="w-full bg-white/10 rounded-xl p-3 text-white border border-white/20 outline-none focus:border-amber-500"
             />
             <button
@@ -64,6 +82,9 @@ export default function AdminLayout({
               دخول
             </button>
           </form>
+          <p className="text-xs text-gray-600 mt-4 text-center">
+            افتح Console (F12) لو الباسورد مش بيدخل علشان تشوف التفاصيل
+          </p>
         </div>
       </main>
     );

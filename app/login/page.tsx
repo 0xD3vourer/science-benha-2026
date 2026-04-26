@@ -34,12 +34,15 @@ export default function LoginPage() {
         collection(db, 'graduates'),
         where('email', '==', cleanEmail)
       );
-      const gSnap = await getDocs(gq);
-
+            const gSnap = await getDocs(gq);
       if (!gSnap.empty) {
         // ✅ moved approved → ابعت magic link
+        // ✅ approved → ابعت magic link
+        // ⚠️ مهم: window.location.origin يضمن إن اللينك يطابق الدومين
+        //    اللي اليوزر فاتح منه. process.env.* في الـ client بيكون undefined
+        //    لو مش متعرف في Vercel، فاللينك يبقى مكسور.
         await sendSignInLinkToEmail(auth, cleanEmail, {
-          url: `${process.env.NEXT_PUBLIC_BASE_URL}/finishSignIn`,
+          url: `${window.location.origin}/finishSignIn`,
           handleCodeInApp: true,
         });
         localStorage.setItem('emailForSignIn', cleanEmail);
